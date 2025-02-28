@@ -1,314 +1,927 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Application TO-DO List</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
-  <!-- Inclusion de Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Todo App</title>
   <style>
-    /* Styles globaux */
-    * { box-sizing: border-box; }
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      min-height: 100vh;
       margin: 0;
-      padding: 0;
-      background-color: #f7f7f8;
-      color: #333;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
     }
-    header {
-      text-align: center;
-      padding: 1rem;
-      border-bottom: 1px solid #e0e0e0;
-      background-color: #fff;
+
+    /* Conteneur principal */
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      max-width: 1000px;
+      margin: 0 auto;
+      backdrop-filter: blur(0);
+      position: relative;
+      z-index: 100;
+      transition: filter 0.3s ease;
     }
-    header h1 {
+    .container.blurred {
+      filter: blur(5px);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #1c2526;
       margin: 0;
-      font-size: 1.5rem;
-      font-weight: 600;
     }
-    section {
-      text-align: center;
-      margin: 1rem;
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
     }
-    #newTask {
-      width: 60%;
-      max-width: 400px;
-      padding: 0.5rem;
-      font-size: 1rem;
+
+    #todo-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    #todo-input {
+      flex: 1;
+      padding: 10px;
       border: 1px solid #ddd;
       border-radius: 8px;
+      font-size: 16px;
       outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.3s;
     }
-    #newTask:focus {
+    #todo-input:focus {
       border-color: #007aff;
-      box-shadow: 0 0 5px rgba(0,122,255,0.2);
     }
-    button, label.button {
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      margin: 0.5rem;
-      background-color: #007aff;
-      color: #fff;
+
+    button {
+      padding: 0;
+      background: transparent;
+      color: #007aff;
       border: none;
-      border-radius: 8px;
+      border-radius: 50%;
+      font-size: 20px;
       cursor: pointer;
-      transition: background-color 0.2s ease;
-      text-decoration: none;
-    }
-    button:hover, label.button:hover {
-      background-color: #005bb5;
-    }
-    input[type="file"] {
-      display: none;
-    }
-    /* Section du graphique */
-    #chartContainer {
-      width: 90%;
-      max-width: 600px;
-      margin: 0 auto 1rem;
-      padding: 1rem;
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    main {
+      transition: background 0.2s, color 0.2s;
+      width: 32px;
+      height: 32px;
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: center;
-      gap: 1rem;
-      padding: 1rem;
     }
+    button:hover {
+      background: rgba(0,122,255,0.1);
+      color: #005bb5;
+    }
+    button[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .columns {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
     .column {
-      background-color: #fff;
-      border-radius: 8px;
-      width: 250px;
-      min-height: 300px;
-      padding: 1rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 200px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
+      transition: box-shadow 0.2s;
+    }
+    .column.drag-over {
+      box-shadow: 0 0 10px 3px rgba(0,122,255,0.5);
     }
     .column h2 {
+      font-size: 18px;
+      color: #1c2526;
+      margin: 0 0 10px 0;
       text-align: center;
-      margin-top: 0;
-      margin-bottom: 1rem;
-      font-size: 1.2rem;
-      font-weight: 600;
     }
-    ul {
-      list-style-type: none;
+
+    .todo-list {
+      list-style: none;
       padding: 0;
+      min-height: 50px;
       flex-grow: 1;
     }
-    li {
-      background-color: #f1f1f1;
-      margin: 0.5rem 0;
-      padding: 0.75rem;
+
+    .todo-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      cursor: move;
+      transition: transform 0.2s;
+      position: relative;
+    }
+    .todo-list li:hover {
+      transform: translateX(5px);
+    }
+    .todo-list li.dragging {
+      opacity: 0.5;
+    }
+
+    /* Bouton delete restauré */
+    .todo-list li .task-delete-btn {
+      background: #ff3b30;
+      padding: 5px 10px;
+      font-size: 14px;
+      width: auto;
+      height: auto;
+      border-radius: 8px;
+      color: white;
+    }
+    .todo-list li .task-delete-btn:hover {
+      background: #d32f2f;
+    }
+
+    .priority-dot {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: gray;
+    }
+    .priority-low {
+      background: #28a745;
+    }
+    .priority-medium {
+      background: #fd7e14;
+    }
+    .priority-high {
+      background: #dc3545;
+    }
+    .task-count {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    #import-input {
+      display: none;
+    }
+
+    /* Volet de propriétés (sidebar) à droite */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 300px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: right 0.3s ease;
+      z-index: 3000;
+      overflow-y: auto;
+    }
+    .sidebar.open {
+      right: 0;
+    }
+    .sidebar h3 {
+      font-size: 20px;
+      color: #1c2526;
+      margin: 0 0 20px 0;
+    }
+    .sidebar label {
+      display: block;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .sidebar input,
+    .sidebar select,
+    .sidebar textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .sidebar textarea {
+      resize: none;
+      height: 80px;
+    }
+    /* Bouton de fermeture de la sidebar */
+    #sidebar-close-btn {
+      background: #ff3b30;
+      color: white;
+      padding: 10px 15px;
+      font-size: 16px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+    #sidebar-close-btn:hover {
+      background: #d32f2f;
+    }
+
+    /* Style épuré pour les popups (thème Apple) */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 2000;
+      width: 300px;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .popup.open {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+    .popup h3 {
+      font-size: 18px;
+      color: #1c2526;
+      margin: 0 0 15px 0;
+      text-align: center;
+      font-weight: 500;
+    }
+    .popup input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .popup ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 15px 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    /* Style des éléments projet + icône de renommage */
+    .project-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 16px;
+      color: #1c2526;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .project-item:hover {
+      background: rgba(200,200,200,0.3);
+    }
+    .rename-icon {
+      font-size: 16px;
+      margin-left: 10px;
+      color: #007aff;
+      cursor: pointer;
+    }
+    .rename-icon:hover {
+      color: #005bb5;
+    }
+
+    .popup p {
+      font-size: 16px;
+      color: #1c2526;
+      margin: 0 0 15px 0;
+      text-align: center;
+    }
+    .popup-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .popup button {
+      width: 100%;
+      background: #007aff;
+      color: white;
+      padding: 8px;
+      font-size: 16px;
+      border: none;
       border-radius: 6px;
       cursor: pointer;
-      user-select: none;
-      transition: background-color 0.2s ease;
     }
-    li:hover {
-      background-color: #e0e0e0;
+    .popup .close-btn,
+    .popup .cancel-btn {
+      background: transparent;
+      color: #007aff;
     }
-    .drag-over {
-      border: 2px dashed #007aff;
+    .popup .close-btn:hover,
+    .popup .cancel-btn:hover {
+      background: rgba(0,122,255,0.1);
+    }
+
+    /* Overlay floutant l'arrière-plan */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      backdrop-filter: blur(5px);
+      background: rgba(255,255,255,0.3);
+      z-index: 1500;
+      transition: opacity 0.3s ease;
+    }
+    .overlay.active {
+      display: block;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Application TO-DO List</h1>
-  </header>
-  <section>
-    <input type="text" id="newTask" placeholder="Ajouter une tâche...">
-    <button id="addTaskBtn">Ajouter</button>
-    <button id="saveBtn">Sauvegarder</button>
-    <label for="importFile" class="button">Importer</label>
-    <input type="file" id="importFile" accept=".json">
-  </section>
-  <section id="chartContainer">
-    <canvas id="taskChart"></canvas>
-  </section>
-  <main>
-    <div class="column" data-status="A faire">
-      <h2>A faire</h2>
-      <ul id="todoList"></ul>
+  <!-- Overlay pour flouter l'arrière-plan -->
+  <div id="overlay" class="overlay"></div>
+
+  <div class="container" id="main-container">
+    <div class="header">
+      <h1 id="project-title">Tasks</h1>
+      <div class="action-buttons">
+        <button id="delete-project-btn" class="delete-btn" title="Supprimer le projet">✕</button>
+        <button id="overview-btn" class="overview-btn" title="Liste des projets">≡</button>
+        <button id="new-project-btn" class="new-project-btn" title="Nouveau projet">+</button>
+      </div>
     </div>
-    <div class="column" data-status="En cours">
-      <h2>En cours</h2>
-      <ul id="inProgressList"></ul>
+
+    <form id="todo-form">
+      <input type="text" id="todo-input" placeholder="Add a task..." autocomplete="off">
+      <button type="submit" class="add-btn" title="Ajouter une tâche">+</button>
+      <button type="button" id="export-btn" class="export-btn" title="Exporter vers CSV">↓</button>
+      <label for="import-input">
+        <button type="button" id="import-btn" class="load-btn" title="Load project">↑</button>
+      </label>
+      <input type="file" id="import-input" accept=".csv">
+    </form>
+
+    <div class="columns">
+      <div class="column" id="todo-column">
+        <h2>À faire</h2>
+        <ul class="todo-list" id="todo-list"></ul>
+        <div class="task-count" id="todo-count">0 tâches</div>
+      </div>
+      <div class="column" id="inprogress-column">
+        <h2>En cours</h2>
+        <ul class="todo-list" id="inprogress-list"></ul>
+        <div class="task-count" id="inprogress-count">0 tâches</div>
+      </div>
+      <div class="column" id="done-column">
+        <h2>Fini</h2>
+        <ul class="todo-list" id="done-list"></ul>
+        <div class="task-count" id="done-count">0 tâches</div>
+      </div>
+      <div class="column" id="notclosed-column">
+        <h2>Non clôturé</h2>
+        <ul class="todo-list" id="notclosed-list"></ul>
+        <div class="task-count" id="notclosed-count">0 tâches</div>
+      </div>
     </div>
-    <div class="column" data-status="Fini">
-      <h2>Fini</h2>
-      <ul id="finishedList"></ul>
+  </div>
+
+  <!-- Sidebar (volet à droite) -->
+  <div id="sidebar" class="sidebar">
+    <h3>Propriétés de la tâche</h3>
+    <label for="task-title">Titre :</label>
+    <input type="text" id="task-title">
+    <label for="priority">Priorité :</label>
+    <select id="priority">
+      <option value="low">Priorité faible</option>
+      <option value="medium" selected>Priorité moyenne</option>
+      <option value="high">Priorité haute</option>
+    </select>
+    <label for="due-date">Date d'échéance :</label>
+    <input type="date" id="due-date">
+    <label for="responsible">Responsable :</label>
+    <input type="text" id="responsible">
+    <label for="requester">Demandeur :</label>
+    <input type="text" id="requester">
+    <label for="description">Description (max 160 caractères) :</label>
+    <textarea id="description" maxlength="160" placeholder="Entrez une courte description..."></textarea>
+    <button id="sidebar-close-btn" class="close-btn">Fermer</button>
+  </div>
+
+  <!-- Popup de création d'un nouveau projet -->
+  <div id="new-project-popup" class="popup">
+    <h3>Nouveau Projet</h3>
+    <input type="text" id="new-project-name" placeholder="Nom du projet">
+    <div class="popup-buttons">
+      <button id="create-project-btn">Créer</button>
+      <button id="close-new-project-btn" class="cancel-btn">Annuler</button>
     </div>
-    <div class="column" data-status="Non clôturé">
-      <h2>Non clôturé</h2>
-      <ul id="nonClosedList"></ul>
+  </div>
+
+  <!-- Popup de suppression de projet -->
+  <div id="delete-project-popup" class="popup">
+    <h3>Supprimer le projet</h3>
+    <p>Confirmer la suppression de "<span id="delete-project-name"></span>" ?</p>
+    <div class="popup-buttons">
+      <button id="confirm-delete-btn">Oui</button>
+      <button id="cancel-delete-btn" class="cancel-btn">Non</button>
     </div>
-    <div class="column" data-status="Cloturé">
-      <h2>Cloturé</h2>
-      <ul id="closedList"></ul>
+  </div>
+
+  <!-- Popup affichant la liste des projets -->
+  <div id="overview-popup" class="popup">
+    <h3>Projets</h3>
+    <ul id="project-overview-list"></ul>
+    <button id="close-overview-btn" class="close-btn">Fermer</button>
+  </div>
+
+  <!-- Popup de renommage d'un projet -->
+  <div id="rename-project-popup" class="popup">
+    <h3>Renommer le projet</h3>
+    <input type="text" id="rename-project-input" placeholder="Nouveau nom...">
+    <div class="popup-buttons">
+      <button id="confirm-rename-btn">OK</button>
+      <button id="cancel-rename-btn" class="cancel-btn">Annuler</button>
     </div>
-  </main>
+  </div>
+
+  <!-- Popup d'erreur -->
+  <div id="error-popup" class="popup">
+    <h3>Erreur</h3>
+    <p>Format attendu incorrect</p>
+    <button id="close-error-btn" class="close-btn">OK</button>
+  </div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const addTaskBtn = document.getElementById('addTaskBtn');
-      const newTaskInput = document.getElementById('newTask');
-      const saveBtn = document.getElementById('saveBtn');
-      const importFileInput = document.getElementById('importFile');
-
-      // Configuration du graphique
-      const ctx = document.getElementById('taskChart').getContext('2d');
-      const chartLabels = ["A faire", "En cours", "Fini", "Non clôturé", "Cloturé"];
-      const taskChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: chartLabels,
-          datasets: [{
-            label: 'Nombre de tâches',
-            data: [0, 0, 0, 0, 0],
-            backgroundColor: chartLabels.map(() => '#007aff')
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { precision: 0 }
-            }
-          }
-        }
-      });
-
-      function updateChart() {
-        const counts = chartLabels.map(status => {
-          const listElement = getListElement(status);
-          return listElement ? listElement.querySelectorAll('li').length : 0;
-        });
-        taskChart.data.datasets[0].data = counts;
-        taskChart.update();
+    document.addEventListener('DOMContentLoaded', () => {
+      const mainContainer = document.getElementById('main-container');
+      const overlay = document.getElementById('overlay');
+      // Fonctions pour afficher/masquer un popup avec overlay et flouter le conteneur principal
+      function showPopup(popup) {
+        popup.classList.add('open');
+        overlay.classList.add('active');
+        mainContainer.classList.add('blurred');
+      }
+      function closePopup(popup) {
+        popup.classList.remove('open');
+        overlay.classList.remove('active');
+        mainContainer.classList.remove('blurred');
       }
 
-      addTaskBtn.addEventListener('click', function() {
-        const taskText = newTaskInput.value.trim();
+      const form = document.getElementById('todo-form');
+      const input = document.getElementById('todo-input');
+      const todoList = document.getElementById('todo-list');
+      const inprogressList = document.getElementById('inprogress-list');
+      const doneList = document.getElementById('done-list');
+      const notclosedList = document.getElementById('notclosed-list');
+      const lists = [
+        { list: todoList, count: document.getElementById('todo-count'), name: 'À faire' },
+        { list: inprogressList, count: document.getElementById('inprogress-count'), name: 'En cours' },
+        { list: doneList, count: document.getElementById('done-count'), name: 'Fini' },
+        { list: notclosedList, count: document.getElementById('notclosed-count'), name: 'Non clôturé' }
+      ];
+
+      const exportBtn = document.getElementById('export-btn');
+      const importInput = document.getElementById('import-input');
+      const sidebar = document.getElementById('sidebar');
+      const titleInput = document.getElementById('task-title');
+      const priorityInput = document.getElementById('priority');
+      const dueDateInput = document.getElementById('due-date');
+      const responsibleInput = document.getElementById('responsible');
+      const requesterInput = document.getElementById('requester');
+      const descriptionInput = document.getElementById('description');
+      const closeBtn = document.getElementById('sidebar-close-btn');
+
+      const deleteProjectBtn = document.getElementById('delete-project-btn');
+      const newProjectBtn = document.getElementById('new-project-btn');
+      const overviewBtn = document.getElementById('overview-btn');
+
+      const newProjectPopup = document.getElementById('new-project-popup');
+      const newProjectName = document.getElementById('new-project-name');
+      const createProjectBtn = document.getElementById('create-project-btn');
+      const closeNewProjectBtn = document.getElementById('close-new-project-btn');
+
+      const deleteProjectPopup = document.getElementById('delete-project-popup');
+      const deleteProjectNameSpan = document.getElementById('delete-project-name');
+      const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+      const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+
+      const overviewPopup = document.getElementById('overview-popup');
+      const projectOverviewList = document.getElementById('project-overview-list');
+      const closeOverviewBtn = document.getElementById('close-overview-btn');
+
+      const renameProjectPopup = document.getElementById('rename-project-popup');
+      const renameProjectInput = document.getElementById('rename-project-input');
+      const confirmRenameBtn = document.getElementById('confirm-rename-btn');
+      const cancelRenameBtn = document.getElementById('cancel-rename-btn');
+
+      const errorPopup = document.getElementById('error-popup');
+      const closeErrorBtn = document.getElementById('close-error-btn');
+
+      const projectTitle = document.getElementById('project-title');
+
+      let selectedTask = null;
+      let projects = { "Tasks": { "À faire": [], "En cours": [], "Fini": [], "Non clôturé": [] } };
+      let currentProject = "Tasks";
+
+      // Variables pour la phase de renommage
+      let projectToRename = null;
+
+      // Mise à jour du nombre de tâches
+      function updateCounts() {
+        lists.forEach(({ list, count }) => {
+          const taskCount = list.children.length;
+          count.textContent = `${taskCount} tâche${taskCount !== 1 ? 's' : ''}`;
+        });
+      }
+
+      // Ajout d'une tâche dans "À faire"
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const taskText = input.value.trim();
         if (taskText !== '') {
-          createTask(taskText, "A faire"); // Ajoute par défaut dans "A faire"
-          newTaskInput.value = '';
-          updateChart();
+          const li = createTask(taskText);
+          todoList.appendChild(li);
+          projects[currentProject]["À faire"].push({ text: taskText, details: { priority: 'medium' } });
+          input.value = '';
+          updateCounts();
         }
       });
 
-      newTaskInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          addTaskBtn.click();
-        }
-      });
-
-      function createTask(text, status) {
+      // Création d'un élément tâche
+      function createTask(text, details = { priority: 'medium' }) {
         const li = document.createElement('li');
-        li.textContent = text;
-        li.setAttribute('draggable', true);
-        li.addEventListener('dragstart', dragStart);
-        li.addEventListener('dragend', dragEnd);
-        const listElement = getListElement(status);
-        if (listElement) {
-          listElement.appendChild(li);
-        }
-        updateChart();
-      }
+        li.draggable = true;
+        li.innerHTML = `
+          <span>${text}</span>
+          <button class="task-delete-btn">Delete</button>
+        `;
+        li.dataset.details = JSON.stringify(details);
+        updatePriorityDot(li, details.priority);
 
-      function getListElement(status) {
-        switch(status) {
-          case "A faire": return document.getElementById('todoList');
-          case "En cours": return document.getElementById('inProgressList');
-          case "Fini": return document.getElementById('finishedList');
-          case "Non clôturé": return document.getElementById('nonClosedList');
-          case "Cloturé": return document.getElementById('closedList');
-          default: return null;
-        }
-      }
-
-      let draggedItem = null;
-
-      function dragStart(e) {
-        draggedItem = this;
-        setTimeout(() => { this.style.display = 'none'; }, 0);
-      }
-
-      function dragEnd(e) {
-        this.style.display = 'block';
-        draggedItem = null;
-        updateChart();
-      }
-
-      const columns = document.querySelectorAll('.column ul');
-      columns.forEach(ul => {
-        ul.addEventListener('dragover', function(e) {
-          e.preventDefault();
-          this.classList.add('drag-over');
+        // Clic sur la tâche => affichage du volet
+        li.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectedTask = li;
+          const currentDetails = JSON.parse(li.dataset.details || '{}');
+          titleInput.value = currentDetails.title || li.querySelector('span').textContent;
+          priorityInput.value = currentDetails.priority || 'medium';
+          dueDateInput.value = currentDetails.dueDate || '';
+          responsibleInput.value = currentDetails.responsible || '';
+          requesterInput.value = currentDetails.requester || '';
+          descriptionInput.value = currentDetails.description || '';
+          sidebar.classList.add('open');
         });
-        ul.addEventListener('dragleave', function(e) {
-          this.classList.remove('drag-over');
+
+        // Bouton "delete" d'une tâche
+        li.querySelector('.task-delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          li.remove();
+          updateCounts();
+          updateProjectData();
+          if (selectedTask === li) closeSidebar();
         });
-        ul.addEventListener('drop', function(e) {
+
+        // Gestion du Drag & Drop
+        li.addEventListener('dragstart', () => {
+          li.classList.add('dragging');
+        });
+        li.addEventListener('dragend', () => {
+          li.classList.remove('dragging');
+          document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+          updateProjectData();
+        });
+
+        return li;
+      }
+
+      // Mise à jour du point de priorité
+      function updatePriorityDot(task, priority) {
+        let dot = task.querySelector('.priority-dot');
+        if (!dot) {
+          dot = document.createElement('div');
+          dot.classList.add('priority-dot');
+          task.prepend(dot);
+        }
+        dot.className = 'priority-dot';
+        if (priority === 'low') {
+          dot.classList.add('priority-low');
+        } else if (priority === 'high') {
+          dot.classList.add('priority-high');
+        } else {
+          dot.classList.add('priority-medium');
+        }
+      }
+
+      // Drag & Drop pour chaque liste
+      lists.forEach(({ list }) => {
+        const column = list.closest('.column');
+        list.addEventListener('dragover', (e) => {
           e.preventDefault();
-          this.classList.remove('drag-over');
-          if (draggedItem) {
-            this.appendChild(draggedItem);
+          column.classList.add('drag-over');
+        });
+        list.addEventListener('dragleave', () => {
+          column.classList.remove('drag-over');
+        });
+        list.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const dragging = document.querySelector('.dragging');
+          if (dragging) {
+            list.appendChild(dragging);
+            column.classList.remove('drag-over');
+            updateCounts();
           }
-          updateChart();
         });
       });
 
-      // Sauvegarder les tâches dans un fichier JSON
-      saveBtn.addEventListener('click', function() {
-        const tasks = [];
-        document.querySelectorAll('.column').forEach(column => {
-          const status = column.getAttribute('data-status');
-          column.querySelectorAll('li').forEach(li => {
-            tasks.push({ text: li.textContent, status: status });
+      // Changement de projet
+      function switchProject(project) {
+        if (!project) return;
+        currentProject = project;
+        projectTitle.textContent = project;
+        lists.forEach(({ list }) => (list.innerHTML = ''));
+        Object.entries(projects[project]).forEach(([column, tasks]) => {
+          const targetList = lists.find(l => l.name === column)?.list;
+          if (targetList) {
+            tasks.forEach(task => {
+              const li = createTask(task.text, task.details);
+              targetList.appendChild(li);
+            });
+          }
+        });
+        updateCounts();
+      }
+
+      // Ouvre la popup listant les projets
+      overviewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        projectOverviewList.innerHTML = '';
+        Object.keys(projects).forEach(project => {
+          // On crée un élément flex qui contient le nom du projet et l'icône de renommage
+          const li = document.createElement('li');
+          li.classList.add('project-item');
+          li.innerHTML = `
+            <span>${project}</span>
+            <span class="rename-icon" title="Renommer">✎</span>
+          `;
+
+          // Clic sur le nom => switchProject
+          li.querySelector('span').addEventListener('click', () => {
+            switchProject(project);
+            closePopup(overviewPopup);
+          });
+
+          // Pour ne pas confondre le clic sur l'icône "renommer"
+          // on met un addEventListener dédié
+          const renameIcon = li.querySelector('.rename-icon');
+          renameIcon.addEventListener('click', (event) => {
+            event.stopPropagation(); // Évite de switcher de projet
+            projectToRename = project;
+            renameProjectInput.value = project; // On met le nom actuel
+            showPopup(renameProjectPopup);
+          });
+
+          projectOverviewList.appendChild(li);
+        });
+        showPopup(overviewPopup);
+      });
+
+      closeOverviewBtn.addEventListener('click', () => {
+        closePopup(overviewPopup);
+      });
+
+      // Renommer un projet
+      function renameProject(oldName, newName) {
+        // Vérification basique
+        if (!projects[oldName]) return;
+        if (projects[newName]) {
+          alert("Un projet portant ce nom existe déjà !");
+          return;
+        }
+        // Renomme en conservant les données
+        projects[newName] = projects[oldName];
+        delete projects[oldName];
+
+        // Met à jour le projet courant si besoin
+        if (currentProject === oldName) {
+          currentProject = newName;
+          projectTitle.textContent = newName;
+        }
+      }
+
+      confirmRenameBtn.addEventListener('click', () => {
+        const newName = renameProjectInput.value.trim();
+        if (newName && projectToRename) {
+          renameProject(projectToRename, newName);
+        }
+        closePopup(renameProjectPopup);
+        projectToRename = null;
+      });
+
+      cancelRenameBtn.addEventListener('click', () => {
+        closePopup(renameProjectPopup);
+        projectToRename = null;
+      });
+
+      // Supprimer un projet
+      deleteProjectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (Object.keys(projects).length > 1) {
+          deleteProjectNameSpan.textContent = currentProject;
+          showPopup(deleteProjectPopup);
+        } else {
+          alert("Impossible de supprimer le dernier projet.");
+        }
+      });
+      confirmDeleteBtn.addEventListener('click', () => {
+        delete projects[currentProject];
+        currentProject = Object.keys(projects)[0];
+        switchProject(currentProject);
+        closePopup(deleteProjectPopup);
+      });
+      cancelDeleteBtn.addEventListener('click', () => {
+        closePopup(deleteProjectPopup);
+      });
+
+      // Nouveau projet
+      newProjectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showPopup(newProjectPopup);
+        newProjectName.focus();
+      });
+      createProjectBtn.addEventListener('click', () => {
+        const newName = newProjectName.value.trim();
+        if (newName && !projects[newName]) {
+          projects[newName] = { "À faire": [], "En cours": [], "Fini": [], "Non clôturé": [] };
+          switchProject(newName);
+          closePopup(newProjectPopup);
+          newProjectName.value = '';
+        }
+      });
+      closeNewProjectBtn.addEventListener('click', () => {
+        closePopup(newProjectPopup);
+        newProjectName.value = '';
+      });
+
+      // Export CSV
+      exportBtn.addEventListener('click', () => {
+        let csvContent = 'Project,Column,Title,Priority,Due Date,Responsible,Requester,Description\n';
+        Object.entries(projects).forEach(([project, columns]) => {
+          Object.entries(columns).forEach(([column, tasks]) => {
+            tasks.forEach(task => {
+              const taskText = task.text.replace(/"/g, '""');
+              const details = task.details || {};
+              const title = (details.title || taskText).replace(/"/g, '""');
+              const priority = details.priority || 'medium';
+              const dueDate = details.dueDate || '';
+              const responsible = (details.responsible || '').replace(/"/g, '""');
+              const requester = (details.requester || '').replace(/"/g, '""');
+              const description = (details.description || '').replace(/"/g, '""');
+              csvContent += `"${project}","${column}","${title}","${priority}","${dueDate}","${responsible}","${requester}","${description}"\n`;
+            });
           });
         });
-        const dataStr = JSON.stringify({ tasks: tasks }, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "tasks.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'tasks.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
       });
 
-      // Importer les tâches depuis un fichier JSON
-      importFileInput.addEventListener('change', function(e) {
+      // Import CSV
+      importInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          try {
-            const data = JSON.parse(e.target.result);
-            if (data.tasks && Array.isArray(data.tasks)) {
-              document.querySelectorAll('ul').forEach(ul => ul.innerHTML = '');
-              data.tasks.forEach(task => {
-                createTask(task.text, task.status);
-              });
-              updateChart();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const csvText = event.target.result;
+            const lines = csvText.split('\n').map(line => line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+            const headers = lines[0].map(h => h.trim());
+            const expectedHeaders = ['Project', 'Column', 'Title', 'Priority', 'Due Date', 'Responsible', 'Requester', 'Description'];
+            if (!headers.every((h, i) => h === expectedHeaders[i])) {
+              showPopup(errorPopup);
+              return;
             }
-          } catch (err) {
-            alert("Erreur lors de l'importation du fichier.");
-          }
-        };
-        reader.readAsText(file);
-        importFileInput.value = "";
+            const newProjects = {};
+            lines.slice(1).forEach(line => {
+              if (line.length < 8 || line.every(item => item.trim() === '')) return;
+              const [project, column, title, priority, dueDate, responsible, requester, description] = line.map(v => v.replace(/^"|"$/g, ''));
+              if (!newProjects[project]) {
+                newProjects[project] = { "À faire": [], "En cours": [], "Fini": [], "Non clôturé": [] };
+              }
+              if (newProjects[project][column]) {
+                newProjects[project][column].push({
+                  text: title,
+                  details: { title, priority, dueDate, responsible, requester, description }
+                });
+              }
+            });
+            projects = newProjects;
+            switchProject(currentProject in projects ? currentProject : Object.keys(projects)[0]);
+          };
+          reader.readAsText(file);
+        }
+        e.target.value = '';
       });
+
+      closeErrorBtn.addEventListener('click', () => {
+        closePopup(errorPopup);
+      });
+
+      // Met à jour projects[currentProject] avec les tâches actuelles
+      function updateProjectData() {
+        projects[currentProject] = {};
+        lists.forEach(({ list, name }) => {
+          projects[currentProject][name] = Array.from(list.children).map(li => ({
+            text: li.querySelector('span').textContent,
+            details: JSON.parse(li.dataset.details || '{}')
+          }));
+        });
+      }
+
+      // Ferme la sidebar
+      function closeSidebar() {
+        sidebar.classList.remove('open');
+        if (selectedTask) {
+          const details = {
+            title: titleInput.value,
+            priority: priorityInput.value,
+            dueDate: dueDateInput.value,
+            responsible: responsibleInput.value,
+            requester: requesterInput.value,
+            description: descriptionInput.value
+          };
+          selectedTask.dataset.details = JSON.stringify(details);
+          selectedTask.querySelector('span').textContent = details.title || selectedTask.querySelector('span').textContent;
+          updatePriorityDot(selectedTask, details.priority);
+          updateProjectData();
+          selectedTask = null;
+        }
+      }
+      closeBtn.addEventListener('click', closeSidebar);
+
+      // Clic sur l'overlay => ferme popups et retire le flou
+      overlay.addEventListener('click', () => {
+        [newProjectPopup, overviewPopup, deleteProjectPopup, renameProjectPopup, errorPopup].forEach(popup => popup.classList.remove('open'));
+        overlay.classList.remove('active');
+        mainContainer.classList.remove('blurred');
+      });
+
+      // Gestion globale du clic : ferme sidebar/popup si on clique en dehors
+      document.addEventListener('click', (e) => {
+        if (
+          !e.target.closest('.popup') &&
+          !e.target.closest('.sidebar') &&
+          !e.target.closest('.todo-list li')
+        ) {
+          closeSidebar();
+          [newProjectPopup, overviewPopup, deleteProjectPopup, renameProjectPopup, errorPopup].forEach(popup => popup.classList.remove('open'));
+          overlay.classList.remove('active');
+          mainContainer.classList.remove('blurred');
+        }
+      });
+
+      // Initial
+      updateCounts();
     });
   </script>
 </body>
